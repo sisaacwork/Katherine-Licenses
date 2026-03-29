@@ -1,9 +1,12 @@
 """Google Drive helpers using a service account."""
 import io
+import json
 import streamlit as st
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
+
+_STATE_FOLDER = "_state"
 
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 
@@ -74,3 +77,40 @@ def list_files(service, folder_id: str) -> list[dict]:
         orderBy="createdTime desc",
     ).execute()
     return results.get("files", [])
+
+
+# ── State JSON helpers (stored in Drive/_state/) ────────────────────────────
+
+def _state_folder_id(service) -> str:
+    root_id = st.secrets["drive"]["root_folder_id"]
+    return get_or_create_folder(service, _STATE_FOLDER, root_id)
+
+
+def read_json(service, filename: str) -> dict:
+    """Read a JSON state file from Drive. Returns {} if not found."""
+    try:
+        folder_id = _state_folder_id(service)
+        query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
+        results = service.files().list(q=query, fields="files(id)").execute()
+        files = results.get("files", [])
+        if not files:
+            return {}
+        content = service.files().get_media(fileId=files[0]["id"]).execute()
+        return json.loads(content.decode("utf-8"))
+    except Exception:
+        return {}
+
+
+def write_json(service, filename: str, data: dict) -> None:
+    """Write/update a JSON state file in Drive."""
+    content = json.dumps(data, indent=2).encode("utf-8")
+    media = MediaIoBaseUpload(io.BytesIO(content), mimetype="application/json")
+    folder_id = _state_folder_id(service)
+    query = f"name='{filename}' and '{folder_id}' in parents and trashed=false"
+    results = service.files().list(q=query, fields="files(id)").execute()
+    files = results.get("files", [])
+    if files:
+        service.files().update(fileId=files[0]["id"], media_body=media).execute()
+    else:
+        body = {"name": filename, "parents": [folder_id]}
+        service.files().create(body=body, media_body=media).execute()
