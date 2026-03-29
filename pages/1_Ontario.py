@@ -11,7 +11,10 @@ if not st.session_state.get("authenticated"):
     st.stop()
 
 st.title("🇨🇦 Ontario — OCSWSSW")
-st.caption("Ontario College of Social Workers and Social Service Workers")
+st.caption(
+    "Ontario College of Social Workers and Social Service Workers · "
+    "[📄 CCP Self-Assessment Tool & PDP (2026)](https://www.ocswssw.org/wp-content/uploads/OCSWSSW-CCP-Assess-Tool-2026-English.pdf)"
+)
 
 on_opens, on_deadline, today = ontario_dates()
 current_year = str(today.year)

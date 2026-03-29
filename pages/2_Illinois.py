@@ -13,7 +13,10 @@ if not st.session_state.get("authenticated"):
     st.stop()
 
 st.title("🇺🇸 Illinois — IDFPR (LSW)")
-st.caption("Illinois Department of Financial and Professional Regulation")
+st.caption(
+    "Illinois Department of Financial and Professional Regulation · "
+    "[📄 NASW-IL CEU Worksheet (2025–2027)](https://e1c37aba-789c-4973-852a-5d28413e15d7.usrfiles.com/ugd/e1c37a_5cabe97361cb4539b734bb14b6ac5a14.pdf)"
+)
 
 il_start, il_deadline, today = illinois_dates()
 il_cycle = f"{il_start.year}–{il_deadline.year}"
