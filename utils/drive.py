@@ -52,6 +52,14 @@ def get_or_create_folder(service, name: str, parent_id: str = None) -> str:
     return service.files().create(body=body, fields="id").execute()["id"]
 
 
+def get_folder_path(service, *parts: str) -> str:
+    """Get (creating if needed) a nested folder path under the Drive root."""
+    folder_id = st.secrets["drive"]["root_folder_id"]
+    for part in parts:
+        folder_id = get_or_create_folder(service, part, folder_id)
+    return folder_id
+
+
 def get_upload_folder(service, jurisdiction: str, subfolder: str, category: str = None) -> str:
     """Return (creating if needed) the folder for a given jurisdiction/subfolder/category."""
     root_id = st.secrets["drive"]["root_folder_id"]
