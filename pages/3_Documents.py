@@ -1,5 +1,4 @@
 """Credential Vault — store, preview, and share important credential PDFs."""
-import base64
 import uuid
 from datetime import datetime
 
@@ -142,39 +141,27 @@ def render_card(slot_key: str, icon: str, label: str) -> None:
                 st.rerun()
 
         # ── Inline PDF preview ──
-        if info and info.get("drive_file_id") and drive_ok:
+        if info and info.get("drive_file_id"):
             with st.expander("👁 Preview PDF"):
                 preview_key = f"preview_{slot_key}"
 
-                if preview_key not in st.session_state:
+                if not st.session_state.get(preview_key):
                     if st.button("📄 Load Preview", key=f"load_preview_{slot_key}"):
-                        try:
-                            with st.spinner("Fetching PDF…"):
-                                pdf_bytes = service.files().get_media(
-                                    fileId=info["drive_file_id"]
-                                ).execute()
-                            st.session_state[preview_key] = pdf_bytes
-                            st.rerun()
-                        except Exception as exc:
-                            st.error(f"Could not load preview: {exc}")
+                        st.session_state[preview_key] = True
+                        st.rerun()
                     st.caption(
-                        "Preview downloads the PDF through your Drive connection. "
-                        "For large files, use the Drive link above instead."
+                        "Renders via Google Drive's viewer — make sure you're "
+                        "signed into Google in this browser."
                     )
                 else:
-                    b64 = base64.b64encode(st.session_state[preview_key]).decode()
-                    st.components.v1.html(
-                        f'<iframe src="data:application/pdf;base64,{b64}" '
-                        f'width="100%" height="700" '
-                        f'style="border:none; border-radius:4px;"></iframe>',
-                        height=710,
+                    file_id = info["drive_file_id"]
+                    st.components.v1.iframe(
+                        f"https://drive.google.com/file/d/{file_id}/preview",
+                        height=700,
                     )
                     if st.button("✖ Close Preview", key=f"close_preview_{slot_key}"):
-                        st.session_state.pop(preview_key)
+                        st.session_state[preview_key] = False
                         st.rerun()
-
-        elif info and not drive_ok:
-            st.caption("ℹ️ Connect Google Drive to enable inline PDF preview.")
 
 
 # ── Predefined slots ───────────────────────────────────────────────────────────
