@@ -115,7 +115,7 @@ def render_card(slot_key: str, icon: str, label: str) -> None:
 
             if confirmed and new_file:
                 with st.spinner("Uploading to Google Drive…"):
-                    folder_id = drv.get_folder_path(service, "Credentials")
+                    folder_id = drv.get_upload_folder(service, "Credentials", "Files")
                     result = drv.upload_file(
                         service,
                         new_file.getvalue(),
