@@ -3,6 +3,7 @@ import uuid
 from datetime import datetime
 
 import streamlit as st
+from streamlit_pdf_viewer import pdf_viewer
 
 from utils.state import load, save
 import utils.drive as drv
@@ -143,24 +144,27 @@ def render_card(slot_key: str, icon: str, label: str) -> None:
         # ── Inline PDF preview ──
         if info and info.get("drive_file_id"):
             with st.expander("👁 Preview PDF"):
-                preview_key = f"preview_{slot_key}"
+                preview_key = f"preview_bytes_{slot_key}"
 
-                if not st.session_state.get(preview_key):
+                if preview_key not in st.session_state:
                     if st.button("📄 Load Preview", key=f"load_preview_{slot_key}"):
-                        st.session_state[preview_key] = True
-                        st.rerun()
-                    st.caption(
-                        "Renders via Google Drive's viewer — make sure you're "
-                        "signed into Google in this browser."
-                    )
+                        if drive_ok:
+                            try:
+                                with st.spinner("Fetching PDF…"):
+                                    pdf_bytes = service.files().get_media(
+                                        fileId=info["drive_file_id"]
+                                    ).execute()
+                                st.session_state[preview_key] = pdf_bytes
+                                st.rerun()
+                            except Exception as exc:
+                                st.error(f"Could not load preview: {exc}")
+                        else:
+                            st.warning("Drive not connected.")
+                    st.caption("Fetches the PDF via your Drive connection and renders it inline.")
                 else:
-                    file_id = info["drive_file_id"]
-                    st.components.v1.iframe(
-                        f"https://drive.google.com/file/d/{file_id}/preview",
-                        height=700,
-                    )
+                    pdf_viewer(st.session_state[preview_key])
                     if st.button("✖ Close Preview", key=f"close_preview_{slot_key}"):
-                        st.session_state[preview_key] = False
+                        st.session_state.pop(preview_key)
                         st.rerun()
 
 
